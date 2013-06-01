@@ -1,0 +1,139 @@
+---
+layout: post
+title: "dotfiles"
+date: 2012-02-28 18:41
+comments: true
+categories: [vim, bash]
+---
+
+##Keeping in sync
+
+I have a bash shell running all of the time, and Vim running most of the time.  It only makes sense to customize and personalize them a bit.  Usually I'll customize my prompt, and maybe add an alias or two here and there.  After happening across some Vim configuration tip that sounds useful, I'll open up my .vimrc and toss it in.  Over time the .bashrc and .vimrc on my laptop and desktop evolve into their own beasts.  Certain commands or aliases will only be available on one of the systems I use, but not others.
+
+Recently I've gotten tired of manually syncing up the customizations that I really care about between my systems.  So, I've decided to try to clean up my configs, and stick them in a git repository.  The idea is, whenever I add a new alias, I just need to *git push* it to the repository.  To sync up another system I only have to *git pull* in the changes.  [This isn't a new idea][github_dotfiles].
+
+##So what?
+Why don't I use someone else's dotfiles repository?  Simple, l want mine personalized to my needs/wants/whims.  I can still use others' repositories for inspiration...
+
+##General structure
+The general idea is to store files like .bashrc, .vimrc, etc. in a directory.  I named mine *dotfiles*.  The layout follows:
+
+dotfiles/  
+dotfiles/bash  
+dotfiles/bash/plugins  
+dotfiles/vim  
+dotfiles/vim/autoload  
+dotfiles/vim/bundle  
+
+There is a *_bashrc* file under the bash directory and a *_vimrc* file under the vim directory.  The *.bashrc* and *.vimrc* files will then be symbolic links the respective files in the dotfiles directory.  This idea can be extended to whatever other initialization dotfiles you'd like to keep in your repository.
+
+##Bash plugins directory
+This directory lets me make my bash customizations a bit more organized.  For instance, I have a *coding* file under that directory that sets up aliases I use for get and bundler.
+
+I put this in *_bashrc* so that whatever is in the plugins directory gets loaded.
+
+``` bash figure out this scripts path
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+BASEDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+############################
+# Pull in other bash configs
+############################
+for f in ${BASEDIR}/plugins/*
+do
+  source $f
+done
+```
+
+##OS specific plugins
+
+As an example I use this in a file named *os_x* under the plugins directory.
+
+``` bash
+if [[ $OSTYPE = darwin* ]]; then
+	#OS X specific stuff here
+fi
+```
+
+##Vim
+I went with pathogen to help keep vim plugins in their own tidy directories.  Drop [pathogen.vim][pathogen] in the *autoload* directory and add the following to *_vimrc*.
+
+``` vim
+" Setup pathogen
+call pathogen#infect()
+call pathogen#helptags()
+```
+
+The *bundle* directory has vim plugins I use, like [NERD tree][nt].  Then i mostly use git submodules to keep them all up to date.  There's a [vim cast][vc] on how to do this.
+
+##A Few issues
+This still leaves us with a few issues to work out.
+
+1. Git doesn't store permissions, so they can be all out of whack when we pull version of files from the repository.
+2. Remembering to update submodules, and how to do that could be an issue... for me at least.
+
+Enter the Rakefile:
+
+``` ruby
+CWD=File.expand_path(File.dirname(__FILE__))
+
+desc "Handling initial setup and linking"
+task :init do
+  puts "pulling submodules"
+  system "cd #{CWD} && git submodule update --init"
+  replace_files
+  setperms
+end
+
+desc "Update dotfiles to most recent version"
+task :update do
+  puts "pulling latest from repo"
+  system "cd #{CWD} && git pull origin master"
+  system "cd #{CWD} && git submodule foreach git pull origin master"
+  replace_files
+  setperms
+end
+
+desc "Set permissions - take away perms from group and other"
+task :setperms do
+  setperms
+end
+
+def replace_files
+  files = [ '.bashrc',
+            '.bash_profile',
+            '.vim',
+            '.vimrc',
+            '.gvimrc',
+  ]
+  files.each do |file|
+    system "rm -rf #{ENV['HOME']}/#{file}"
+  end
+
+  link_file("#{CWD}/bash/_bashrc", "#{ENV['HOME']}/.bashrc")
+  link_file("#{CWD}/bash/_bash_profile", "#{ENV['HOME']}/.bash_profile")
+  link_file("#{CWD}/vim/_vimrc", "#{ENV['HOME']}/.vimrc")
+  link_file("#{CWD}/vim/_gvimrc", "#{ENV['HOME']}/.gvimrc")
+  link_file("#{CWD}/vim", "#{ENV['HOME']}/.vim")
+end
+
+def link_file(src, target)
+  system "ln -fs #{src} #{target}"
+end
+
+def setperms
+  system "chmod -R g-rwx,o-rwx #{CWD}"
+end
+```
+
+``` bash Update to the latest version
+cd $HOME/dotfiles && rake update
+```
+
+Enjoy!
+
+[github_dotfiles]: https://github.com/search?q=dotfiles&repo=&langOverride=&start_value=1&type=Repositories&language=
+[pathogen]: http://www.vim.org/scripts/script.php?script_id=2332
+[nt]: https://github.com/scrooloose/nerdtree
+[vc]: http://vimcasts.org/episodes/synchronizing-plugins-with-git-submodules-and-pathogen/
