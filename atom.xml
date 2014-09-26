@@ -4,7 +4,7 @@
   <title><![CDATA[Rob Vinson]]></title>
   <link href="http://robvinson.github.io/atom.xml" rel="self"/>
   <link href="http://robvinson.github.io/"/>
-  <updated>2014-09-25T20:21:02-05:00</updated>
+  <updated>2014-09-25T20:31:11-05:00</updated>
   <id>http://robvinson.github.io/</id>
   <author>
     <name><![CDATA[Rob]]></name>
@@ -20,7 +20,7 @@
     <id>http://robvinson.github.io/blog/2014/09/25/xss-honor-system</id>
     <content type="html"><![CDATA[<p>Saw this in the wild.  XSS honor system, too funny&hellip;</p>
 
-<p><img class="center" src="images/2014-09-25-xsshonorsystem.png"></p>
+<p><img class="center" src="http://robvinson.github.io/images/2014-09-25-xsshonorsystem.png"></p>
 ]]></content>
   </entry>
   
