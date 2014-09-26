@@ -8,4 +8,4 @@ categories:
 
 Saw this in the wild.  XSS honor system, too funny...
 
-{% img center images/2014-09-25-xsshonorsystem.png %}
+{% img center /images/2014-09-25-xsshonorsystem.png %}
