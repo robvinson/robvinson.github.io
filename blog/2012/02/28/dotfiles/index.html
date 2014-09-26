@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Rob Vinson</title>
+  <title>dotfiles - Rob Vinson</title>
   <meta name="author" content="Rob">
 
   
-  <meta name="description" content="Saw this in the wild. XSS honor system, too funny&hellip; ">
+  <meta name="description" content="Keeping in sync I have a bash shell running all of the time, and Vim running most of the time. It only makes sense to customize and personalize them &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://robvinson.github.io/">
+  <link rel="canonical" href="http://robvinson.github.io/blog/2012/02/28/dotfiles/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -68,254 +68,13 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2014/09/25/xss-honor-system/">XSS Honor System</a></h1>
       
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-09-25T20:12:00-05:00" pubdate data-updated="true">Sep 25<span>th</span>, 2014</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Saw this in the wild.  XSS honor system, too funny&hellip;</p>
-
-<p><img class="center" src="images/2014-09-25-xsshonorsystem.png"></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/07/08/lantronix-serial-to-ethernet/">Lantronix Serial-to-ethernet</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-07-08T20:00:00-05:00" pubdate data-updated="true">Jul 8<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Serial-to-Ethernet Devices</h2>
-
-<p>I&rsquo;ve come across various serial-to-ethernet adapters over the years.  What&rsquo;s a serial-to-ethernet adapter?  They allow you to plug in some device that communicates information via serial (E.G. <a href="http://en.wikipedia.org/wiki/RS-232" title="RS-232 protocol">RS-232</a>) into an IP network. For example, maybe you have some temperature sensor shares out readings via a serial interface.  You hook this sensor into an IP network via a serial-to-ethernet adapter.  Voilà, now you can get your readings from your desktop, server, etc.</p>
-
-<h2>Lantronix</h2>
-
-<p>Recently I&rsquo;ve crossed paths with some <a href="http://www.lantronix.com" title="Lantronix">Lantronix</a> serial-to-ethernet adapters.</p>
-
-<p>Some notable things that stand out on these devices:</p>
-
-<ul>
-<li>Web-based configuration has a blank default username/password</li>
-<li>Telneting to 9999/TCP offers up another means of configuration, again no password is necessary by default.</li>
-<li>30718/UDP runs a service by which information about the device can be queried, and configuration may be done.</li>
-</ul>
-
-
-<h2>30718/UDP</h2>
-
-<p>There are many functions available over 30718/UDP.  After some some time
-googling, I discovered a <a href="ftp://ftp.lantronix.com/priv/cobox_tools/setup.zip" title="Lantronix 30178/UDP functions">zip file</a> containing documents which detail these functions.</p>
-
-<ul>
-<li>Node reset (03)</li>
-<li>Firmware version query (F6)</li>
-<li>Response to firmware version query (F7)</li>
-<li>Setup record query (F8)</li>
-<li>Response to setup record query (F9)</li>
-<li>Set configuration &ndash; supplying a setup record (FA)</li>
-<li>Response to set configuration (FB)</li>
-<li>Set IP address (FC)</li>
-</ul>
-
-
-<p>So, the device can be reset, configured, and have its IP address changed all via UDP, huh&hellip;</p>
-
-<p>Particularly funny is that response to a setup record query has a field for &ldquo;telnet config password&rdquo;.  If I&rsquo;m understanding correctly, if 9999/TCP has a password, you can just look up the password over 30718/UDP.</p>
-
-<h2>Scanning for Lantronix Devices</h2>
-
-<p>My <a href="http://www.metasploit.com/">Metasploit</a> scanner module can be found at <a href="https://github.com/robvinson/metasploit-modules" title="my public metasploit-module repository">robvinson/metasploit-modules</a> on GitHub.</p>
-
-<p>What a scan looks like:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>msf &gt; use auxiliary/scanner/scada/lantronix_discover
-</span><span class='line'>msf  auxiliary(lantronix_discover) &gt; set RHOSTS 10.0.0.0/24
-</span><span class='line'>RHOSTS =&gt; 10.0.0.0/24
-</span><span class='line'>msf  auxiliary(lantronix_discover) &gt; run
-</span><span class='line'>
-</span><span class='line'>[+] Found 10.0.0.15 - Lantronix Device type: UDS-10/Cobox 4.X
-</span><span class='line'>[+] Found 10.0.0.112 - Lantronix Device type: XPort-03/04
-</span><span class='line'>[*] Scanned 256 of 256 hosts (100% complete)
-</span><span class='line'>[*] Auxiliary module execution completed</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Update &ndash; 01/30/2013</h2>
-
-<p>Looks like some others stumbled across lantronix and there are metasploit modules!  One extracts the telnet password, and one grabs the version from a telnet banner.</p>
-
-<ul>
-<li><a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_version.rb">https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_version.rb</a></li>
-<li><a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_password.rb">https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_password.rb</a></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/05/18/ubiquitous-web-server/">Ubiquitous Web Server</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-05-18T19:30:00-05:00" pubdate data-updated="true">May 18<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Web servers on everything&hellip;</h2>
-
-<p>Vendors put web servers on damn near <strong>everything</strong>.  You can find some pretty interesting stuff out there running web servers if you just start looking for it.  Serial to TCP/IP adapters, cameras, HVAC stuff&hellip; folks plug all kinds of these kinds of things into IP networks given the chance.  Often enough, these devices have a web server running that you can visit to configure the device, monitor its status, etc.</p>
-
-<h2>Sometimes they have passwords set</h2>
-
-<p>Sometimes these sorts of devices have the ability to set a password on them.  If that&rsquo;s the case, there&rsquo;s a good chance whoever installed the device didn&rsquo;t bother to change the password from the default.  Someone can just search for the manual/documentation for the device to find out if there are default passwords for it.  The installers probably think, &ldquo;Why bother setting a decent password on this thing?  I&rsquo;ll just forget it.  There&rsquo;s no sensitive information stored on this thing anyway, it just supports some instrument.&rdquo;</p>
-
-<p>Analogy time:  I don&rsquo;t keep my life savings in my car.  That doesn&rsquo;t mean I&rsquo;m cool with someone opening my car door, getting in, and screwing around with it.  Also, I&rsquo;m not inclined to leave my car parked in a bad neighborhood for too long.  I need my car; I depend on it.</p>
-
-<h2>Here comes the rocket science</h2>
-
-<p>Put a decent password on your network connected stuff!  Also, you probably don&rsquo;t really need to plug it into that accessible network in the first place.  Give it a private IP if you can, or segregate it into a network for devices of its kind.</p>
-
-<h2>People make mistakes sometimes</h2>
-
-<p>Yeah, people make mistakes, some don&rsquo;t know any better, and others are hopeless.</p>
-
-<h2>Here&rsquo;s a trick</h2>
-
-<ol>
-<li>Do a port scan across a range of IPs to find open web services (port 80/tcp)</li>
-</ol>
-
-
-<figure class='code'><figcaption><span>Discover web servers</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>nmap -PN -p80 -T4 --max-retries 1 10.0.0.0/16 -oG port80scan
-</span><span class='line'>grep <span class="s1">&#39;80/open&#39;</span> port80scan.gnmap | awk <span class="s1">&#39;{print $2}&#39;</span> &gt; port-80-open-ips.txt
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ol>
-<li>Use wget to pull down the index page for each IP address and store those in files. (<a href="https://gist.github.com/2723040">download dl.sh</a>)</li>
-</ol>
-
-
-<figure class='code'><figcaption><span>Download the pages</span><a href='https://gist.github.com/2723040'>(download.sh) </a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>./dl.sh port-80-open-open-ips.txt
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ol>
-<li>grep across the files for things that could be interesting</li>
-</ol>
-
-
-<figure class='code'><figcaption><span>Find goodies</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>grep -i <span class="s1">&#39;serial&#39;</span> 80open/*
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/02/28/dotfiles/">Dotfiles</a></h1>
+        <h1 class="entry-title">Dotfiles</h1>
       
     
     
@@ -339,7 +98,7 @@ googling, I discovered a <a href="ftp://ftp.lantronix.com/priv/cobox_tools/setup
   </header>
 
 
-  <div class="entry-content"><h2>Keeping in sync</h2>
+<div class="entry-content"><h2>Keeping in sync</h2>
 
 <p>I have a bash shell running all of the time, and Vim running most of the time.  It only makes sense to customize and personalize them a bit.  Usually I&rsquo;ll customize my prompt, and maybe add an alias or two here and there.  After happening across some Vim configuration tip that sounds useful, I&rsquo;ll open up my .vimrc and toss it in.  Over time the .bashrc and .vimrc on my laptop and desktop evolve into their own beasts.  Certain commands or aliases will only be available on one of the systems I use, but not others.</p>
 
@@ -543,18 +302,59 @@ dotfiles/vim/bundle</p>
 
 <p>Enjoy!</p>
 </div>
+
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Rob</span></span>
+
+      
+
+
+
+
+
+
+
+
   
 
 
-    </article>
+<time datetime="2012-02-28T18:41:00-06:00" pubdate data-updated="true">Feb 28<span>th</span>, 2012</time>
+      
+
+<span class="categories">
   
-  <div class="pagination">
+    <a class='category' href='/blog/categories/bash/'>bash</a>, <a class='category' href='/blog/categories/vim/'>vim</a>
+  
+</span>
+
+
+    </p>
     
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://robvinson.github.io/blog/2012/02/28/dotfiles/" data-via="" data-counturl="http://robvinson.github.io/blog/2012/02/28/dotfiles/" >Tweet</a>
+  
+  
+  
 </div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right articlenav" href="/blog/2012/05/18/ubiquitous-web-server/" title="Next Post: Ubiquitous Web Server">Ubiquitous Web Server &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
 <aside class="sidebar">
   
     <section>
@@ -586,6 +386,7 @@ dotfiles/vim/bundle</p>
 
   
 </aside>
+
 
     </div>
   </div>

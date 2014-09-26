@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: security | Rob Vinson]]></title>
+  <link href="http://robvinson.github.io/blog/categories/security/atom.xml" rel="self"/>
+  <link href="http://robvinson.github.io/"/>
+  <updated>2014-09-25T20:21:02-05:00</updated>
+  <id>http://robvinson.github.io/</id>
+  <author>
+    <name><![CDATA[Rob]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Lantronix serial-to-ethernet]]></title>
+    <link href="http://robvinson.github.io/blog/2012/07/08/lantronix-serial-to-ethernet/"/>
+    <updated>2012-07-08T20:00:00-05:00</updated>
+    <id>http://robvinson.github.io/blog/2012/07/08/lantronix-serial-to-ethernet</id>
+    <content type="html"><![CDATA[<h2>Serial-to-Ethernet Devices</h2>
+
+<p>I&rsquo;ve come across various serial-to-ethernet adapters over the years.  What&rsquo;s a serial-to-ethernet adapter?  They allow you to plug in some device that communicates information via serial (E.G. <a href="http://en.wikipedia.org/wiki/RS-232" title="RS-232 protocol">RS-232</a>) into an IP network. For example, maybe you have some temperature sensor shares out readings via a serial interface.  You hook this sensor into an IP network via a serial-to-ethernet adapter.  Voilà, now you can get your readings from your desktop, server, etc.</p>
+
+<h2>Lantronix</h2>
+
+<p>Recently I&rsquo;ve crossed paths with some <a href="http://www.lantronix.com" title="Lantronix">Lantronix</a> serial-to-ethernet adapters.</p>
+
+<p>Some notable things that stand out on these devices:</p>
+
+<ul>
+<li>Web-based configuration has a blank default username/password</li>
+<li>Telneting to 9999/TCP offers up another means of configuration, again no password is necessary by default.</li>
+<li>30718/UDP runs a service by which information about the device can be queried, and configuration may be done.</li>
+</ul>
+
+
+<h2>30718/UDP</h2>
+
+<p>There are many functions available over 30718/UDP.  After some some time
+googling, I discovered a <a href="ftp://ftp.lantronix.com/priv/cobox_tools/setup.zip" title="Lantronix 30178/UDP functions">zip file</a> containing documents which detail these functions.</p>
+
+<ul>
+<li>Node reset (03)</li>
+<li>Firmware version query (F6)</li>
+<li>Response to firmware version query (F7)</li>
+<li>Setup record query (F8)</li>
+<li>Response to setup record query (F9)</li>
+<li>Set configuration &ndash; supplying a setup record (FA)</li>
+<li>Response to set configuration (FB)</li>
+<li>Set IP address (FC)</li>
+</ul>
+
+
+<p>So, the device can be reset, configured, and have its IP address changed all via UDP, huh&hellip;</p>
+
+<p>Particularly funny is that response to a setup record query has a field for &ldquo;telnet config password&rdquo;.  If I&rsquo;m understanding correctly, if 9999/TCP has a password, you can just look up the password over 30718/UDP.</p>
+
+<h2>Scanning for Lantronix Devices</h2>
+
+<p>My <a href="http://www.metasploit.com/">Metasploit</a> scanner module can be found at <a href="https://github.com/robvinson/metasploit-modules" title="my public metasploit-module repository">robvinson/metasploit-modules</a> on GitHub.</p>
+
+<p>What a scan looks like:</p>
+
+<p>```
+msf > use auxiliary/scanner/scada/lantronix_discover
+msf  auxiliary(lantronix_discover) > set RHOSTS 10.0.0.0/24
+RHOSTS => 10.0.0.0/24
+msf  auxiliary(lantronix_discover) > run</p>
+
+<p>[+] Found 10.0.0.15 &ndash; Lantronix Device type: UDS-10/Cobox 4.X
+[+] Found 10.0.0.112 &ndash; Lantronix Device type: XPort-03/04
+[<em>] Scanned 256 of 256 hosts (100% complete)
+[</em>] Auxiliary module execution completed
+```</p>
+
+<h2>Update &ndash; 01/30/2013</h2>
+
+<p>Looks like some others stumbled across lantronix and there are metasploit modules!  One extracts the telnet password, and one grabs the version from a telnet banner.</p>
+
+<ul>
+<li><a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_version.rb">https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_version.rb</a></li>
+<li><a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_password.rb">https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/scanner/telnet/lantronix_telnet_password.rb</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Ubiquitous Web Server]]></title>
+    <link href="http://robvinson.github.io/blog/2012/05/18/ubiquitous-web-server/"/>
+    <updated>2012-05-18T19:30:00-05:00</updated>
+    <id>http://robvinson.github.io/blog/2012/05/18/ubiquitous-web-server</id>
+    <content type="html"><![CDATA[<h2>Web servers on everything&hellip;</h2>
+
+<p>Vendors put web servers on damn near <strong>everything</strong>.  You can find some pretty interesting stuff out there running web servers if you just start looking for it.  Serial to TCP/IP adapters, cameras, HVAC stuff&hellip; folks plug all kinds of these kinds of things into IP networks given the chance.  Often enough, these devices have a web server running that you can visit to configure the device, monitor its status, etc.</p>
+
+<h2>Sometimes they have passwords set</h2>
+
+<p>Sometimes these sorts of devices have the ability to set a password on them.  If that&rsquo;s the case, there&rsquo;s a good chance whoever installed the device didn&rsquo;t bother to change the password from the default.  Someone can just search for the manual/documentation for the device to find out if there are default passwords for it.  The installers probably think, &ldquo;Why bother setting a decent password on this thing?  I&rsquo;ll just forget it.  There&rsquo;s no sensitive information stored on this thing anyway, it just supports some instrument.&rdquo;</p>
+
+<p>Analogy time:  I don&rsquo;t keep my life savings in my car.  That doesn&rsquo;t mean I&rsquo;m cool with someone opening my car door, getting in, and screwing around with it.  Also, I&rsquo;m not inclined to leave my car parked in a bad neighborhood for too long.  I need my car; I depend on it.</p>
+
+<h2>Here comes the rocket science</h2>
+
+<p>Put a decent password on your network connected stuff!  Also, you probably don&rsquo;t really need to plug it into that accessible network in the first place.  Give it a private IP if you can, or segregate it into a network for devices of its kind.</p>
+
+<h2>People make mistakes sometimes</h2>
+
+<p>Yeah, people make mistakes, some don&rsquo;t know any better, and others are hopeless.</p>
+
+<h2>Here&rsquo;s a trick</h2>
+
+<ol>
+<li>Do a port scan across a range of IPs to find open web services (port 80/tcp)</li>
+</ol>
+
+
+<p>``` bash Discover web servers</p>
+
+<pre><code>nmap -PN -p80 -T4 --max-retries 1 10.0.0.0/16 -oG port80scan
+grep '80/open' port80scan.gnmap | awk '{print $2}' &gt; port-80-open-ips.txt
+</code></pre>
+
+<p>```</p>
+
+<ol>
+<li>Use wget to pull down the index page for each IP address and store those in files. (<a href="https://gist.github.com/2723040">download dl.sh</a>)</li>
+</ol>
+
+
+<p>``` bash Download the pages <a href="https://gist.github.com/2723040">https://gist.github.com/2723040</a> (download.sh)</p>
+
+<pre><code>./dl.sh port-80-open-open-ips.txt
+</code></pre>
+
+<p>```</p>
+
+<ol>
+<li>grep across the files for things that could be interesting</li>
+</ol>
+
+
+<p>``` bash Find goodies</p>
+
+<pre><code>grep -i 'serial' 80open/*
+</code></pre>
+
+<p>```</p>
+]]></content>
+  </entry>
+  
+</feed>

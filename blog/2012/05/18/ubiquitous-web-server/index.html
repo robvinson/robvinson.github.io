@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Ubiquitous Web Server - Rob Vinson</title>
+  <meta name="author" content="Rob">
+
+  
+  <meta name="description" content="Web servers on everything&hellip; Vendors put web servers on damn near everything. You can find some pretty interesting stuff out there running web &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://robvinson.github.io/blog/2012/05/18/ubiquitous-web-server/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Rob Vinson" type="application/atom+xml">
+  <link href='http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <div id="logo">
+  	<div id="logoLeft">{</div>
+  	<div id="logoText">rv</div>
+  	<div id="logoRight">}</div>
+  	<div class="clear"></div>
+  </div>
+  <h1><a href="/">Rob Vinson</a></h1>
+  
+  <div class="clear"></div>
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:robvinson.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      
+        <h1 class="entry-title">Ubiquitous Web Server</h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-18T19:30:00-05:00" pubdate data-updated="true">May 18<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>Web servers on everything&hellip;</h2>
+
+<p>Vendors put web servers on damn near <strong>everything</strong>.  You can find some pretty interesting stuff out there running web servers if you just start looking for it.  Serial to TCP/IP adapters, cameras, HVAC stuff&hellip; folks plug all kinds of these kinds of things into IP networks given the chance.  Often enough, these devices have a web server running that you can visit to configure the device, monitor its status, etc.</p>
+
+<h2>Sometimes they have passwords set</h2>
+
+<p>Sometimes these sorts of devices have the ability to set a password on them.  If that&rsquo;s the case, there&rsquo;s a good chance whoever installed the device didn&rsquo;t bother to change the password from the default.  Someone can just search for the manual/documentation for the device to find out if there are default passwords for it.  The installers probably think, &ldquo;Why bother setting a decent password on this thing?  I&rsquo;ll just forget it.  There&rsquo;s no sensitive information stored on this thing anyway, it just supports some instrument.&rdquo;</p>
+
+<p>Analogy time:  I don&rsquo;t keep my life savings in my car.  That doesn&rsquo;t mean I&rsquo;m cool with someone opening my car door, getting in, and screwing around with it.  Also, I&rsquo;m not inclined to leave my car parked in a bad neighborhood for too long.  I need my car; I depend on it.</p>
+
+<h2>Here comes the rocket science</h2>
+
+<p>Put a decent password on your network connected stuff!  Also, you probably don&rsquo;t really need to plug it into that accessible network in the first place.  Give it a private IP if you can, or segregate it into a network for devices of its kind.</p>
+
+<h2>People make mistakes sometimes</h2>
+
+<p>Yeah, people make mistakes, some don&rsquo;t know any better, and others are hopeless.</p>
+
+<h2>Here&rsquo;s a trick</h2>
+
+<ol>
+<li>Do a port scan across a range of IPs to find open web services (port 80/tcp)</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>Discover web servers</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>nmap -PN -p80 -T4 --max-retries 1 10.0.0.0/16 -oG port80scan
+</span><span class='line'>grep <span class="s1">&#39;80/open&#39;</span> port80scan.gnmap | awk <span class="s1">&#39;{print $2}&#39;</span> &gt; port-80-open-ips.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Use wget to pull down the index page for each IP address and store those in files. (<a href="https://gist.github.com/2723040">download dl.sh</a>)</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>Download the pages</span><a href='https://gist.github.com/2723040'>(download.sh) </a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>./dl.sh port-80-open-open-ips.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>grep across the files for things that could be interesting</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>Find goodies</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>grep -i <span class="s1">&#39;serial&#39;</span> 80open/*
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Rob</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-18T19:30:00-05:00" pubdate data-updated="true">May 18<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/scada/'>scada</a>, <a class='category' href='/blog/categories/security/'>security</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://robvinson.github.io/blog/2012/05/18/ubiquitous-web-server/" data-via="" data-counturl="http://robvinson.github.io/blog/2012/05/18/ubiquitous-web-server/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left articlenav" href="/blog/2012/02/28/dotfiles/" title="Previous Post: dotfiles">&laquo; dotfiles</a>
+      
+      
+        <a class="basic-alignment right articlenav" href="/blog/2012/07/08/lantronix-serial-to-ethernet/" title="Next Post: Lantronix serial-to-ethernet">Lantronix serial-to-ethernet &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/09/25/xss-honor-system/">XSS Honor System</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/07/08/lantronix-serial-to-ethernet/">Lantronix serial-to-ethernet</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/05/18/ubiquitous-web-server/">Ubiquitous Web Server</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/28/dotfiles/">dotfiles</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Rob -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
