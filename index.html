@@ -9,7 +9,7 @@
   <meta name="author" content="Rob">
 
   
-  <meta name="description" content="Saw this in the wild. XSS honor system, too funny&hellip; ">
+  <meta name="description" content="Sure the SSLv3 CBC padding oracle attack dubbed POODLE is a big deal, any attacks that break SSL are for sure a big deal. However this attack as &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -70,6 +70,170 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2014/10/16/drupal-sqli-cve-2014-3704/">Drupal SQLi CVE-2014-3704</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-16T19:56:00-05:00" pubdate data-updated="true">Oct 16<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Sure the SSLv3 CBC padding oracle attack dubbed <a href="https://www.openssl.org/~bodo/ssl-poodle.pdf">POODLE</a> is a big deal, any attacks that break SSL are for sure a big deal.  However this attack as described requires <a href="http://en.wikipedia.org/wiki/Man-in-the-middle_attack">MiTM</a>.  As such its probably not going to cause mass and immediate doom that the media is trumpeting.  In fact it seems to be overshadowing what is in my opinion a more immediate threat.  Specifically the unauthenticated SQLi vulnerability in Drupal core that was announced yesterday (<a href="https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3704">CVE-2014-3704</a> | <a href="https://www.drupal.org/SA-CORE-2014-005">SA-CORE-2014-005</a>).  Drupal is a pretty commonly deployed CMS, the amount of folks this could impact is probably pretty high.  So naturally last night I started to look at the changes introduced to Drupal to patch this issue, and to figure out how it will be exploited.  Though when coming back to it this evening I see an <a href="http://packetstormsecurity.com/files/128720/Drupal-7.X-SQL-Injection.html">exploit</a> has been posted on packetstorm.  Early worm and all that jazz&hellip;  Anyway, since I took some time to investigate this vulnerability before this exploit appeared I figure I may as well blog some details.</p>
+
+<h2>funky foreach</h2>
+
+<p>The <a href="http://cgit.drupalcode.org/drupal/commit/?id=19b32a3">commit</a> just makes a slight change to the <em>expandArguments()</em> function.  The comments for this function indicate that it expands out array arguments into a SQL query.  The fix makes sure that a php <a href="http://php.net/manual/en/control-structures.foreach.php">foreach</a> statement only iterates over the values of the array by using the <em>array_values()</em> function.  That seems a bit odd until you realize that <em>foreach</em> has two forms.  One iterates over values, and one that iterates over key &ndash;> values.</p>
+
+<figure class='code'><figcaption><span>Boring iteration over values</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">// form one</span>
+</span><span class='line'><span class="x">$arr = array(&quot;one&quot;, &quot;two&quot;, &quot;three&quot;);</span>
+</span><span class='line'><span class="x">foreach ($arr as $value) {</span>
+</span><span class='line'><span class="x">      echo &quot;Value: $value\n&quot;;</span>
+</span><span class='line'><span class="x">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The above code will simply assign each array element in <em>$arr</em> in turn to the variable <em>$value</em> then print it out.  You can try it yourself at [<a href="http://writecodeonline.com/php/">http://writecodeonline.com/php/</a>] if you&rsquo;d like.  Nothing groundbreaking here&hellip;  The next form is a bit more interesting.</p>
+
+<figure class='code'><figcaption><span>Slightly less boring iteration </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">$arr = array(&quot;one&quot;, &quot;two&quot;, &quot;three&quot;);</span>
+</span><span class='line'><span class="x">foreach ($arr as $key =&gt; $value) {</span>
+</span><span class='line'><span class="x">      echo &quot;Key: $key =&gt; Value: $value\n&quot;;</span>
+</span><span class='line'><span class="x">}</span>
+</span><span class='line'><span class="x">// Output: </span>
+</span><span class='line'><span class="x">// Key: 0 =&gt; Value: one</span>
+</span><span class='line'><span class="x">// Key: 1 =&gt; Value: two </span>
+</span><span class='line'><span class="x">// Key: 2 =&gt; Value: three </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Ok, so the above foreach will assign the array element&rsquo;s index to $key and the value to $value, fair enough.  This is the sort of array that the vulnerable <em>expandArguments()</em> function was expecting.  Though as it turns out PHP <a href="http://php.net/manual/en/language.types.array.php">arrays are really maps</a>.  So these &ldquo;arrays&rdquo; can have key > value elements like you would expect from a hash/dict/map in some other languge.  This leads us to the final <em>foreach</em> example..</p>
+
+<figure class='code'><figcaption><span>Last foreach example I promise</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">$arr = array(&quot;a&quot; =&gt; &quot;one&quot;, &quot;b&quot; =&gt; &quot;two&quot;, &quot;c&quot; =&gt; &quot;three&quot;);</span>
+</span><span class='line'><span class="x">foreach ($arr as $key =&gt; $value) {</span>
+</span><span class='line'><span class="x">      echo &quot;Key: $key =&gt; Value: $value\n&quot;;</span>
+</span><span class='line'><span class="x">}</span>
+</span><span class='line'><span class="x">// Output: </span>
+</span><span class='line'><span class="x">// Key: a =&gt; Value: one</span>
+</span><span class='line'><span class="x">// Key: b =&gt; Value: two </span>
+</span><span class='line'><span class="x">// Key: c =&gt; Value: three </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Ah ha!  So that&rsquo;s why the fixed foreach statment added in <em>array_values()</em>.  They want to make sure someone hasn&rsquo;t slipped in a key value pair.  This becomes more evident when you look through the rest of <em>expandArguments()</em> and see that the key actually makes its way into a query.</p>
+
+<figure class='code'><figcaption><span>expandArguments snippet</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">// ...snip...</span>
+</span><span class='line'><span class="x">foreach ($data as $i =&gt; $value) {</span>
+</span><span class='line'><span class="x">// ...snip...</span>
+</span><span class='line'><span class="x">  $new_keys[$key . &#39;_&#39; . $i] = $value;</span>
+</span><span class='line'><span class="x">}</span>
+</span><span class='line'><span class="x">// ...snip...</span>
+</span><span class='line'><span class="x">$query = preg_replace(&#39;#&#39; . $key . &#39;\b#&#39;, implode(&#39;, &#39;, array_keys($new_keys)), $query);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So, now we know what we need to aim for, getting an array with a key value pair to this function, and putting our SQLi payload into the key.</p>
+
+<h2>Finding the path to vulnerable code</h2>
+
+<p>We know to exploit this we need to get an array we can control to <em>expandArguments()</em>.  To investigate help this I:</p>
+
+<ul>
+<li>installed Drupal 7.31 on a VM.</li>
+<li>turned on MySQL query logging by adding the line &ldquo;log = /var/log/mysql/all.log&rdquo; to /etc/mysql/my.cnf.</li>
+<li>instrumented the <em>expandAruments()</em> function by using <em>fopen()</em> to open a log file and <em>fwrite()</em> to write out the key/values being handled by the function.</li>
+</ul>
+
+
+<p>After browsing through the Drupal code a bit to figure out how a HTTP GET/POST request could result in an appropriately formed array making its way to <em>expandArguments()</em> I found the function <a href="https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_http_build_query/7">drupal_http_build_query</a>.  Reading this code and running a few test arrays through the function via [<a href="http://writecodeonline.com/php/">http://writecodeonline.com/php/</a>] was sufficient to get a feel for the function.</p>
+
+<figure class='code'><figcaption><span>arrays in URLs</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">$a = array(&quot;a&quot;, &quot;b&quot;, array(&quot;x&quot;,&quot;y&quot;,&quot;z&quot;));</span>
+</span><span class='line'><span class="x">foreach($a as $k =&gt; $v) {</span>
+</span><span class='line'><span class="x">  echo &quot;$k =&gt; $v\n&quot;;</span>
+</span><span class='line'><span class="x">};</span>
+</span><span class='line'><span class="x">echo &quot;encoded array: &quot;</span>
+</span><span class='line'><span class="x">echo drupal_http_build_query($a);</span>
+</span><span class='line'>
+</span><span class='line'><span class="x">// Output:</span>
+</span><span class='line'><span class="x">// 0 =&gt; a</span>
+</span><span class='line'><span class="x">// 1 =&gt; b</span>
+</span><span class='line'><span class="x">// 2 =&gt; Array</span>
+</span><span class='line'><span class="x">// encoded array: 0=a&amp;1=b&amp;2[0]=x&amp;2[1]=y&amp;2[2]=z</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>From the example above We now know that you can set a key in an array by using brackets in a Drupal URL.  Using <a href="http://portswigger.net/burp/">burp</a> to capture a login attempt (it doesn&rsquo;t matter that username and password are wrong) and then using burp repeater to edit the login request and replay it, forcing an error that showed SQLi didn&rsquo;t take long.  One could probably construct a request file to be used with <a href="http://sqlmap.org/">sqlmap</a> and go to town now.</p>
+
+<p><img class="center" src="/images/burp-drupal-sqli.jpg"></p>
+
+<p>Alas, since someone just released an exploit I&rsquo;ve lost interest&hellip;</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -560,6 +724,10 @@ dotfiles/vim/bundle</p>
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/16/drupal-sqli-cve-2014-3704/">Drupal SQLi CVE-2014-3704</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/09/25/xss-honor-system/">XSS Honor System</a>
